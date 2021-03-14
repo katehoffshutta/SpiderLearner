@@ -12,8 +12,11 @@ data(GSE32062.GPL6480_eset)
 lateStage = exprs(GSE32062.GPL6480_eset)
 lateStageClinicalInfo = pData(GSE32062.GPL6480_eset)
 
-estrogen = read.table("~/Desktop/ovarianCarcinoma.txt",header=T,sep="\t")[,1]
-lateStageSmall = lateStage[which(row.names(lateStage) %in% estrogen[-1]),] #GO_INTRACELLULAR_ESTROGEN_RECEPTOR_SIGNALING_PATHWAY),]
+# Extract genes included in the HPO ovarian carcinoma pathway
+# See https://hpo.jax.org/app/browse/term/HP:0025318
+# Reference: Kohler et al. (2021) The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, https://doi.org/10.1093/nar/gkaa1043
+
+lateStageSmall = lateStage[c(1680,1681,3027,4564,8930,12243,12245,13694,13695,13701,13979,16082,16875,17980),]
 lateStageSmall = t(lateStageSmall)
 names(lateStageSmall) = colnames(lateStageSmall)
 lateStageSmall = apply(lateStageSmall,2,standardize)
