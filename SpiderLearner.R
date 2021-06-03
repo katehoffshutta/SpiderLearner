@@ -97,13 +97,30 @@ SpiderLearner = R6Class(
       {
         dataTest = data[foldsDF$fold == k,]
         print(paste("[SpiderLearner] Calculating in fold", k))
-        loglikResults[k] = private$.calcLoss(alphas,foldsNets[[k]],
+        loglikResults[k] = 1/nrow(dataTest)*private$.calcLoss(alphas,foldsNets[[k]],
                                     dataTest)
       } # end of inner k-fold loop
 
       print(loglikResults)
       return(mean(loglikResults[,1])) # mean cross-validated loss
+    },
+    
+    .boundedObjectiveFunction = function(alphas,foldsNets,data,foldsDF)
+    {
+      expitLossResults = matrix(rep(NA,private$.K),ncol=1)
+      for(k in 1:private$.K)
+      {
+        dataTest = data[foldsDF$fold == k,]
+        print(paste("[SpiderLearner] Calculating in fold", k))
+        negll = 1/nrow(dataTest)*private$.calcLoss(alphas,foldsNets[[k]],
+                               dataTest)
+        expitLossResults[k] = exp(negll)/(1+exp(negll))
+      } # end of inner k-fold loop
+      
+      print(expitLossResults)
+      return(mean(expitLossResults[,1])) # mean cross-validated loss
     }
+    
 
   ), # end private
   
@@ -157,7 +174,7 @@ SpiderLearner = R6Class(
       
     },
     
-    runSpiderLearner = function(data,K=5,standardize=T,nCores=1)
+    runSpiderLearner = function(data,K=5,standardize=T,nCores=1,boundedLoss=F)
       {
       private$.K = K
       private$.nCores = nCores
@@ -173,14 +190,33 @@ SpiderLearner = R6Class(
       # find optimal coefficients
       equal = function(alphas,foldsNets,data,foldsDF){return(sum(alphas))}
       nMod = length(private$.library)
-      alphaOpt = solnp(rep(1/nMod,nMod),
-                       fun=private$.objectiveFunction,
-                       eqfun=equal,
-                       eqB=1,
-                       foldsNets=foldsNets,
-                       data=data,
-                       foldsDF=foldEstimates[[1]],
-                       LB=rep(0,nMod),UB=rep(1,nMod))
+      if(!boundedLoss) 
+      {
+        alphaOpt = solnp(rep(1/nMod,nMod),
+                         fun=private$.objectiveFunction,
+                         eqfun=equal,
+                         eqB=1,
+                         foldsNets=foldsNets,
+                         data=data,
+                         foldsDF=foldEstimates[[1]],
+                         LB=rep(0,nMod),UB=rep(1,nMod))
+      }
+      
+      if(boundedLoss)
+      {
+        alphaOpt = solnp(rep(1/nMod,nMod),
+                         fun=private$.boundedObjectiveFunction,
+                         eqfun=equal,
+                         eqB=1,
+                         foldsNets=foldsNets,
+                         data=data,
+                         foldsDF=foldEstimates[[1]],
+                         LB=rep(0,nMod),UB=rep(1,nMod))
+        
+        print(alphaOpt$convergence)
+        print(alphaOpt$nfuneval)
+        print(alphaOpt$elapsed)
+      }
       
       fullModels = list()
       for(i in 1:nMod){
