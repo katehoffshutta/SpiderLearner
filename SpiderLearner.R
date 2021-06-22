@@ -4,7 +4,7 @@ library(R6)
 library(foreach)
 library(doParallel)
 
-source("SpiderLearnerCandidates.R")
+source("~/umass/research/networks/ensemble/alphaCode/playground/SpiderLearner/SpiderLearnerCandidates.R")
 
 Candidate = R6Class(
   private = list(
@@ -66,10 +66,8 @@ SpiderLearner = R6Class(
       foldsNets = list()
       foldsNets = foreach(k=1:K) %dopar%
       {
-        print(paste("Estimating in ",k))
         foreach(i=1:length(private$.library))%do%
         {
-          print(private$.library[[i]]$getIdentifier())
           private$.library[[i]]$fit(data[foldsDF$fold !=k,])
         }
        
@@ -101,7 +99,6 @@ SpiderLearner = R6Class(
                                     dataTest)
       } # end of inner k-fold loop
 
-      print(loglikResults)
       return(mean(loglikResults[,1])) # mean cross-validated loss
     },
     
@@ -112,12 +109,11 @@ SpiderLearner = R6Class(
       {
         dataTest = data[foldsDF$fold == k,]
         print(paste("[SpiderLearner] Calculating in fold", k))
-        negll = 1/nrow(dataTest)*private$.calcLoss(alphas,foldsNets[[k]],
+        negll = 1/ncol(dataTest)*1/nrow(dataTest)*private$.calcLoss(alphas,foldsNets[[k]],
                                dataTest)
         expitLossResults[k] = exp(negll)/(1+exp(negll))
       } # end of inner k-fold loop
       
-      print(expitLossResults)
       return(mean(expitLossResults[,1])) # mean cross-validated loss
     }
     
