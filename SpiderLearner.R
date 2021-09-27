@@ -4,7 +4,7 @@ library(R6)
 library(foreach)
 library(doParallel)
 
-source("~/umass/research/networks/ensemble/alphaCode/playground/SpiderLearner/SpiderLearnerCandidates.R")
+source("SpiderLearnerCandidates.R")
 
 Candidate = R6Class(
   private = list(
